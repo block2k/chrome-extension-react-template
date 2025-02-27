@@ -1,35 +1,74 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [selectorA, setSelectorA] = useState(
+    "#AppFrameNav > div > nav > div.Polaris-Navigation__PrimaryNavigation.Polaris-Scrollable.Polaris-Scrollable--vertical.Polaris-Scrollable--horizontal.Polaris-Scrollable--scrollbarWidthThin > ul > li:nth-child(2) > ul > li:nth-child(3) > ul > li > div.Polaris-Navigation__ItemWrapper > div > a"
+  );
+  const [selectorB, setSelectorB] = useState(
+    "#AppFrameNav > div > nav > div.Polaris-Navigation__PrimaryNavigation.Polaris-Scrollable.Polaris-Scrollable--vertical.Polaris-Scrollable--horizontal.Polaris-Scrollable--scrollbarWidthThin > div:nth-child(1) > ul > li:nth-child(8) > div > div > a"
+  );
+  const [delay, setDelay] = useState(5); // seconds
+  const [running, setRunning] = useState(false);
+
+  const sendMessageToContentScript = (message) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, message);
+      }
+    });
+  };
+
+  const handleStart = () => {
+    const delayMs = parseFloat(delay) * 1000;
+    if (!selectorA || !selectorB || isNaN(delayMs)) {
+      alert("Please provide valid selectors and delay.");
+      return;
+    }
+    sendMessageToContentScript({
+      type: "START",
+      selectorA,
+      selectorB,
+      delay: delayMs,
+    });
+    setRunning(true);
+  };
+
+  const handleStop = () => {
+    sendMessageToContentScript({ type: "STOP" });
+    setRunning(false);
+  };
 
   return (
-    <>
+    <div style={{ padding: "1rem" }}>
+      <h1>Auto Button Clicker</h1>
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <label>
+          Selector App:
+          <input type="text" value={selectorA} onChange={(e) => setSelectorA(e.target.value)} placeholder="#buttonA" />
+        </label>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+      <div>
+        <label>
+          Selector DiscountTab:
+          <input type="text" value={selectorB} onChange={(e) => setSelectorB(e.target.value)} placeholder=".buttonB" />
+        </label>
+      </div>
+      <div>
+        <label>
+          Delay (seconds):
+          <input type="number" value={delay} onChange={(e) => setDelay(e.target.value)} placeholder="5" />
+        </label>
+      </div>
+      <div style={{ marginTop: "1rem" }}>
+        <button onClick={handleStart} disabled={running}>
+          Start
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        <button onClick={handleStop} disabled={!running}>
+          Stop
+        </button>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
